@@ -2,6 +2,12 @@
 
 Type specification extensions for Elixir.
 
+## Status
+[![CircleCI](http://circleci-badges-max.herokuapp.com/img/pylon/spect?token=:circle-ci-token)](https://circleci.com/gh/pylon/spect)
+[![Hex](http://img.shields.io/hexpm/v/spect.svg?style=flat)](https://hex.pm/packages/spect)
+
+The API reference is available [here](https://hexdocs.pm/spect/).
+
 ## Installation
 
 ```elixir
@@ -81,11 +87,11 @@ to `:t`, the conventional spec name for structs. This expression should
 evaluate to the following:
 
 ```elixir
->>> %Lab.Parent{
+>>> %Smiths.Parent{
   name: "Will",
   children: %{
-    "firstborn" => %Lab.Child{name: "Jayden"},
-    "second" => %Lab.Child{name: "Willow"}
+    "firstborn" => %Smiths.Child{name: "Jayden"},
+    "second" => %Smiths.Child{name: "Willow"}
   }
 }
 ```
