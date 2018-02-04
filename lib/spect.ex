@@ -3,10 +3,10 @@ defmodule Spect do
   elixir typespec enhancements
   """
 
-  alias Kernel.Typespec
+  use Memoize
 
   defmodule ConvertError do
-    defexception message: nil
+    defexception message: "could not map to spec"
   end
 
   @doc """
@@ -64,7 +64,7 @@ defmodule Spect do
   """
   @spec to_spec!(data :: any, module :: atom, name :: atom) :: any
   def to_spec!(data, module, name \\ :t) do
-    types = Typespec.beam_types(module)
+    types = load_types(module)
 
     if types === nil do
       raise ArgumentError, "module not found: #{module}"
@@ -74,9 +74,29 @@ defmodule Spect do
     |> Keyword.values()
     |> Enum.filter(fn {k, _v, _a} -> k == name end)
     |> case do
-      [{^name, type, _args}] -> to_type!(data, type)
+      [{^name, type, _args}] -> to_kind!(data, type)
       _ -> raise ArgumentError, "type not found: #{module}.#{name}"
     end
+  end
+
+  defmemo load_types(module) do
+    Kernel.Typespec.beam_types(module)
+  end
+
+  # -------------------------------------------------------------------------
+  # top-level kind demultiplexing
+  # -------------------------------------------------------------------------
+  defp to_kind!(data, {:type, _line, type, args}) do
+    to_type!(data, type, args)
+  end
+
+  defp to_kind!(data, {:remote_type, _line, type}) do
+    [{:atom, _, module}, {:atom, _, name}, []] = type
+    to_spec!(data, module, name)
+  end
+
+  defp to_kind!(data, {kind, _line, value}) do
+    to_lit!(data, kind, value)
   end
 
   # -------------------------------------------------------------------------
@@ -84,132 +104,139 @@ defmodule Spect do
   # -------------------------------------------------------------------------
 
   # string->atom
-  defp to_type!(data, {:atom, _line, value} = type) when is_binary(data) do
+  defp to_lit!(data, :atom, value) when is_binary(data) do
     ^value = String.to_existing_atom(data)
   rescue
-    _ -> reraise(ConvertError, inspect(type), System.stacktrace())
+    _ -> reraise(ConvertError, "invalid atom: #{value}", System.stacktrace())
   end
 
   # atom/bool/integer literal
-  defp to_type!(data, {kind, _line, value} = type)
-       when kind in [:atom, :boolean, :integer] do
+  defp to_lit!(data, _kind, value) do
     if data === value do
       value
     else
-      raise(ConvertError, inspect(type))
+      raise(ConvertError, "expected: #{value}, found: #{inspect(data)}")
     end
   end
 
-  # empty list literal
-  defp to_type!(data, {:type, _line, nil, []}) when is_list(data) do
-    data
-  end
-
-  # empty map literal
-  defp to_type!(data, {:type, _line, :map, []}) when is_map(data) do
-    data
-  end
-
   # -------------------------------------------------------------------------
-  # basic types
+  # types
   # -------------------------------------------------------------------------
 
   # any type
-  defp to_type!(data, {:type, _line, :any, []}) do
+  defp to_type!(data, :any, _args) do
     data
   end
 
   # none type
-  defp to_type!(_data, {:type, _line, :none, []} = type) do
-    raise(ConvertError, inspect(type))
+  defp to_type!(_data, :none, _args) do
+    raise ConvertError
   end
 
-  # atoms
-  defp to_type!(data, {:type, _line, :atom, []}) when is_atom(data) do
-    data
-  end
-
-  # string->atom
-  defp to_type!(data, {:type, _line, :atom, []} = type) when is_binary(data) do
-    String.to_existing_atom(data)
+  # atom
+  defp to_type!(data, :atom, _args) do
+    cond do
+      is_atom(data) -> data
+      is_binary(data) -> String.to_existing_atom(data)
+      true -> raise ArgumentError
+    end
   rescue
-    _ -> reraise(ConvertError, inspect(type), System.stacktrace())
+    _ ->
+      reraise(
+        ConvertError,
+        "invalid atom: #{inspect(data)}",
+        System.stacktrace()
+      )
   end
 
   # boolean
-  defp to_type!(data, {:type, _line, :boolean, []}) when is_boolean(data) do
-    data
+  defp to_type!(data, :boolean, _args) do
+    if is_boolean(data) do
+      data
+    else
+      raise(ConvertError, "expected: boolean, found: #{inspect(data)}")
+    end
   end
 
   # integer
-  defp to_type!(data, {:type, _line, :integer, []}) when is_integer(data) do
-    data
+  defp to_type!(data, :integer, _args) do
+    if is_integer(data) do
+      data
+    else
+      raise(ConvertError, "expected: integer, found: #{inspect(data)}")
+    end
   end
 
   # float
-  defp to_type!(data, {:type, _line, :float, []}) when is_float(data) do
-    data
+  defp to_type!(data, :float, _args) do
+    if is_float(data) do
+      data
+    else
+      raise(ConvertError, "expected: float, found: #{inspect(data)}")
+    end
   end
 
   # number
-  defp to_type!(data, {:type, _line, :number, []}) when is_number(data) do
-    data
+  defp to_type!(data, :number, _args) do
+    if is_number(data) do
+      data
+    else
+      raise(ConvertError, "expected: number, found: #{inspect(data)}")
+    end
   end
 
   # negative integer
-  defp to_type!(data, {:type, _line, :neg_integer, []})
-       when is_integer(data) and data < 0 do
-    data
+  defp to_type!(data, :neg_integer, _args) do
+    if is_integer(data) and data < 0 do
+      data
+    else
+      raise(
+        ConvertError,
+        "expected: negative integer, found: #{inspect(data)}"
+      )
+    end
   end
 
   # non-negative integer
-  defp to_type!(data, {:type, _line, :non_neg_integer, []})
-       when is_integer(data) and data >= 0 do
-    data
+  defp to_type!(data, :non_neg_integer, _args) do
+    if is_integer(data) and data >= 0 do
+      data
+    else
+      raise(
+        ConvertError,
+        "expected: non-negative integer, found: #{inspect(data)}"
+      )
+    end
   end
 
   # positive integer
-  defp to_type!(data, {:type, _line, :pos_integer, []})
-       when is_integer(data) and data > 0 do
-    data
+  defp to_type!(data, :pos_integer, _args) do
+    if is_integer(data) and data > 0 do
+      data
+    else
+      raise(
+        ConvertError,
+        "expected: positive integer, found: #{inspect(data)}"
+      )
+    end
   end
 
   # string
-  defp to_type!(data, {:type, _line, :binary, []}) when is_binary(data) do
-    data
+  defp to_type!(data, :binary, _args) do
+    if is_binary(data) do
+      data
+    else
+      raise(ConvertError, "expected: string, found: #{inspect(data)}")
+    end
   end
 
-  # any tuple
-  defp to_type!(data, {:type, _line, :tuple, :any}) when is_tuple(data) do
-    data
-  end
-
-  # any list->tuple
-  defp to_type!(data, {:type, _line, :tuple, :any}) when is_list(data) do
-    Enum.reduce(data, {}, &Tuple.append(&2, &1))
-  end
-
-  # any list
-  defp to_type!(data, {:type, _line, :list, []}) when is_list(data) do
-    data
-  end
-
-  # any map
-  defp to_type!(data, {:type, _line, :map, :any}) when is_map(data) do
-    data
-  end
-
-  # -------------------------------------------------------------------------
-  # union types
-  # -------------------------------------------------------------------------
-
-  # a | b | c, return the first match, recursive
-  defp to_type!(data, {:type, _line, :union, types} = type) do
+  # union a | b | c, return the first match, recursive
+  defp to_type!(data, :union, types) do
     results =
       types
       |> Enum.map(fn type ->
         try do
-          to_type!(data, type)
+          to_kind!(data, type)
         rescue
           _ -> ConvertError
         end
@@ -217,26 +244,66 @@ defmodule Spect do
       |> Enum.filter(fn result -> result !== ConvertError end)
 
     case results do
-      [result | _results] -> result
-      _ -> raise ConvertError, inspect(type)
+      [result | _results] ->
+        result
+
+      _ ->
+        raise ConvertError,
+              "expected: union of #{inspect(types)}, found: #{inspect(data)}"
     end
+  end
+
+  # tuple
+  defp to_type!(data, :tuple, args) do
+    to_tuple!(data, args)
+  end
+
+  # list
+  defp to_type!(data, :list, args) do
+    to_list!(data, args)
+  end
+
+  # empty list
+  defp to_type!(data, nil, []) do
+    if is_list(data) do
+      data
+    else
+      raise(ConvertError, "expected: list, found: #{inspect(data)}")
+    end
+  end
+
+  # map
+  defp to_type!(data, :map, args) do
+    to_map!(data, args)
   end
 
   # -------------------------------------------------------------------------
   # tuple types
   # -------------------------------------------------------------------------
 
-  # exact tuple, recursive
-  defp to_type!(data, {:type, line, :tuple, types}) when is_tuple(data) do
-    to_type!(Tuple.to_list(data), {:type, line, :tuple, types})
+  # any tuple, list->tuple
+  defp to_tuple!(data, :any) do
+    cond do
+      is_tuple(data) -> data
+      is_list(data) -> Enum.reduce(data, {}, &Tuple.append(&2, &1))
+      true -> raise(ConvertError, "expected: tuple, found: #{inspect(data)}")
+    end
   end
 
-  # exact list->tuple, recursive
-  defp to_type!(data, {:type, _line, :tuple, types})
-       when is_list(data) and length(data) === length(types) do
-    Enum.reduce(Enum.zip(data, types), {}, fn {data, type}, result ->
-      Tuple.append(result, to_type!(data, type))
-    end)
+  # exact tuple, list->tuple, recursive
+  defp to_tuple!(data, types) do
+    cond do
+      is_tuple(data) ->
+        to_tuple!(Tuple.to_list(data), types)
+
+      is_list(data) and length(data) === length(types) ->
+        Enum.reduce(Enum.zip(data, types), {}, fn {data, type}, result ->
+          Tuple.append(result, to_kind!(data, type))
+        end)
+
+      true ->
+        raise(ConvertError, "expected: tuple, found: #{inspect(data)}")
+    end
   end
 
   # -------------------------------------------------------------------------
@@ -244,91 +311,98 @@ defmodule Spect do
   # -------------------------------------------------------------------------
 
   # typed list, recursive
-  defp to_type!(data, {:type, _line, :list, [type]}) when is_list(data) do
-    Enum.map(data, &to_type!(&1, type))
+  defp to_list!(data, [type]) do
+    if is_list(data) do
+      Enum.map(data, &to_kind!(&1, type))
+    else
+      raise(ConvertError, "expected: list, found: #{inspect(data)}")
+    end
   end
 
-  # -------------------------------------------------------------------------
-  # struct types
-  # -------------------------------------------------------------------------
-
-  # any map -> struct-like map
-  defp to_type!(
-         data,
-         {:type, _line, :map,
-          [
-            {:type, _, :map_field_exact,
-             [{:atom, _, :__struct__}, {:type, _, :atom, []}]}
-            | _fields
-          ]}
-       )
-       when is_map(data) do
-    Map.new(Map.to_list(data), fn
-      {k, v} when is_binary(k) -> {String.to_existing_atom(k), v}
-      {k, v} -> {k, v}
-    end)
-  end
-
-  # any map -> exact struct, recursive
-  defp to_type!(
-         data,
-         {:type, _line, :map,
-          [
-            {:type, _, :map_field_exact,
-             [{:atom, _, :__struct__}, {:atom, _, struct}]}
-            | fields
-          ]}
-       )
-       when is_map(data) do
-    Enum.reduce(fields, Kernel.struct(struct), fn field, result ->
-      {:type, _line, :map_field_exact, [{:atom, _, k}, type]} = field
-
-      if Map.has_key?(data, k) do
-        Map.put(result, k, to_type!(Map.get(data, k), type))
-      else
-        sk = to_string(k)
-
-        if Map.has_key?(data, sk) do
-          Map.put(result, k, to_type!(Map.get(data, sk), type))
-        else
-          result
-        end
-      end
-    end)
+  # any list
+  defp to_list!(data, []) do
+    if is_list(data) do
+      data
+    else
+      raise(ConvertError, "expected: list, found: #{inspect(data)}")
+    end
   end
 
   # -------------------------------------------------------------------------
   # map types
   # -------------------------------------------------------------------------
 
+  # any map -> struct-like map
+  defp to_map!(data, [
+         {:type, _, :map_field_exact,
+          [{:atom, _, :__struct__}, {:type, _, :atom, []}]}
+         | _fields
+       ]) do
+    if is_map(data) do
+      Map.new(Map.to_list(data), fn
+        {k, v} when is_binary(k) -> {String.to_existing_atom(k), v}
+        {k, v} -> {k, v}
+      end)
+    else
+      raise(ConvertError, "expected: map, found: #{inspect(data)}")
+    end
+  end
+
+  # any map -> exact struct, recursive
+  defp to_map!(data, [
+         {:type, _, :map_field_exact,
+          [{:atom, _, :__struct__}, {:atom, _, struct}]}
+         | fields
+       ]) do
+    if is_map(data) do
+      Enum.reduce(fields, Kernel.struct(struct), fn field, result ->
+        {:type, _line, :map_field_exact, [{:atom, _, k}, type]} = field
+
+        if Map.has_key?(data, k) do
+          Map.put(result, k, to_kind!(Map.get(data, k), type))
+        else
+          sk = to_string(k)
+
+          if Map.has_key?(data, sk) do
+            Map.put(result, k, to_kind!(Map.get(data, sk), type))
+          else
+            result
+          end
+        end
+      end)
+    else
+      raise(ConvertError, "expected: map, found: #{inspect(data)}")
+    end
+  end
+
+  # empty map
+  defp to_map!(data, []) do
+    if is_map(data) do
+      data
+    else
+      raise(ConvertError, "expected: map, found: #{inspect(data)}")
+    end
+  end
+
+  # any map
+  defp to_map!(data, :any) do
+    if is_map(data) do
+      data
+    else
+      raise(ConvertError, "expected: map, found: #{inspect(data)}")
+    end
+  end
+
   # any map, recursive
-  defp to_type!(
-         data,
-         {:type, _line, :map, [{:type, _, mode, [key_field, val_field]}]}
-       )
-       when is_map(data) and mode in [:map_field_exact, :map_field_assoc] do
-    Enum.reduce(Map.to_list(data), %{}, fn {k, v}, r ->
-      Map.put(r, to_type!(k, key_field), to_type!(v, val_field))
-    end)
-  end
+  defp to_map!(data, args) do
+    [{:type, _, mode, [key_field, val_field]}] = args
 
-  # -------------------------------------------------------------------------
-  # remote types
-  # -------------------------------------------------------------------------
-
-  # fetch remote, recursive to_spec
-  defp to_type!(
-         data,
-         {:remote_type, _line, [{:atom, _, module}, {:atom, _, name}, []]}
-       ) do
-    to_spec!(data, module, name)
-  end
-
-  # -------------------------------------------------------------------------
-  # default match
-  # -------------------------------------------------------------------------
-
-  defp to_type!(_data, type) do
-    raise ConvertError, inspect(type)
+    if is_map(data) and mode in [:map_field_exact, :map_field_assoc] do
+      Enum.reduce(Map.to_list(data), %{}, fn {k, v}, r ->
+        Map.put(r, to_kind!(k, key_field), to_kind!(v, val_field))
+      end)
+    else
+      raise(ConvertError, "expected: map, found: #{inspect(data)}")
+    end
   end
 end

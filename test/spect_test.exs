@@ -37,8 +37,10 @@ defmodule Spect.Test do
     {:error, %ConvertError{}} = to_spec(2, Specs, :literal_1)
 
     assert to_spec([], Specs, :literal_list) === {:ok, []}
+    {:error, %ConvertError{}} = to_spec(1, Specs, :literal_list)
 
     assert to_spec(%{}, Specs, :literal_map) == {:ok, %{}}
+    {:error, %ConvertError{}} = to_spec(1, Specs, :literal_map)
   end
 
   test "basic types" do
@@ -133,6 +135,7 @@ defmodule Spect.Test do
     assert to_spec([], Specs, :list_test) === {:ok, []}
     assert to_spec([1], Specs, :list_test) === {:ok, [1]}
     assert to_spec([1, 2], Specs, :list_test) === {:ok, [1, 2]}
+    {:error, %ConvertError{}} = to_spec(1, Specs, :list_test)
   end
 
   test "struct types" do
@@ -148,6 +151,7 @@ defmodule Spect.Test do
     assert to_spec(%{int: 2}, BasicStruct) === {:ok, %BasicStruct{int: 2}}
 
     assert to_spec(%{"int" => 2}, BasicStruct) === {:ok, %BasicStruct{int: 2}}
+    {:error, %ConvertError{}} = to_spec(1, BasicStruct)
   end
 
   test "map types" do

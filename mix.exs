@@ -38,6 +38,7 @@ defmodule Spect.MixProject do
   # project dependencies
   defp deps do
     [
+      {:memoize, "~> 1.2"},
       {:excoveralls, "~> 0.8", only: :test},
       {:credo, "~> 0.8", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 0.5", only: [:dev], runtime: false},
