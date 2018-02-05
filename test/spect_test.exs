@@ -166,5 +166,10 @@ defmodule Spect.Test do
     assert to_spec(%{}, Specs, :map_required_test) === {:ok, %{}}
     assert to_spec(%{ok: 1}, Specs, :map_required_test) === {:ok, %{ok: 1}}
     {:error, %ConvertError{}} = to_spec(1, Specs, :map_required_test)
+
+    assert to_spec(%{:key1 => 1, "key2" => "str"}, Specs, :map_exact_test) ===
+             {:ok, %{key1: 1, key2: "str"}}
+
+    {:error, %ConvertError{}} = to_spec(1, Specs, :map_exact_test)
   end
 end

@@ -393,13 +393,35 @@ defmodule Spect do
     end
   end
 
-  # any map, recursive
-  defp to_map!(data, args) do
-    [{:type, _, mode, [key_field, val_field]}] = args
-
-    if is_map(data) and mode in [:map_field_exact, :map_field_assoc] do
+  # any typed map, recursive
+  defp to_map!(data, [{:type, _line, _mode, [key_field, val_field]}])
+       when elem(key_field, 0) in [:type, :remote_type] do
+    if is_map(data) do
       Enum.reduce(Map.to_list(data), %{}, fn {k, v}, r ->
         Map.put(r, to_kind!(k, key_field), to_kind!(v, val_field))
+      end)
+    else
+      raise(ConvertError, "expected: map, found: #{inspect(data)}")
+    end
+  end
+
+  # any map, exact keys, recursive
+  defp to_map!(data, fields) do
+    if is_map(data) do
+      Enum.reduce(fields, %{}, fn field, result ->
+        {:type, _line, _mode, [{_, _, k}, type]} = field
+
+        if Map.has_key?(data, k) do
+          Map.put(result, k, to_kind!(Map.get(data, k), type))
+        else
+          sk = to_string(k)
+
+          if Map.has_key?(data, sk) do
+            Map.put(result, k, to_kind!(Map.get(data, sk), type))
+          else
+            result
+          end
+        end
       end)
     else
       raise(ConvertError, "expected: map, found: #{inspect(data)}")

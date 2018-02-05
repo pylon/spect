@@ -32,6 +32,11 @@ defmodule Spect.Support.Specs do
 
   @type map_test :: %{integer() => String.t()}
   @type map_required_test :: %{required(atom()) => integer}
+  @type map_exact_test :: %{
+          required(:key1) => integer(),
+          required(:key2) => String.t(),
+          :key3 => integer()
+        }
 
   defmodule BasicStruct do
     @type t :: %__MODULE__{
