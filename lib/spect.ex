@@ -232,24 +232,18 @@ defmodule Spect do
 
   # union a | b | c, return the first match, recursive
   defp to_type!(data, :union, types) do
-    results =
-      types
-      |> Enum.map(fn type ->
+    result =
+      Enum.reduce_while(types, ConvertError, fn type, result ->
         try do
-          to_kind!(data, type)
+          {:halt, to_kind!(data, type)}
         rescue
-          _ -> ConvertError
+          _ -> {:cont, result}
         end
       end)
-      |> Enum.filter(fn result -> result !== ConvertError end)
 
-    case results do
-      [result | _results] ->
-        result
-
-      _ ->
-        raise ConvertError,
-              "expected: union of #{inspect(types)}, found: #{inspect(data)}"
+    with ConvertError <- result do
+      raise ConvertError,
+            "expected: union of #{inspect(types)}, found: #{inspect(data)}"
     end
   end
 
