@@ -13,7 +13,11 @@ defmodule Spect.MixProject do
       package: package(),
       deps: deps(),
       test_coverage: [tool: ExCoveralls],
-      preferred_cli_env: [coveralls: :test, "coveralls.html": :test],
+      preferred_cli_env: [
+        coveralls: :test,
+        "coveralls.html": :test,
+        "coveralls.post": :test
+      ],
       dialyzer: [
         ignore_warnings: ".dialyzerignore",
         plt_add_deps: :transitive
