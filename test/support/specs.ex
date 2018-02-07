@@ -28,10 +28,10 @@ defmodule Spect.Support.Specs do
 
   @type tuple_test :: {atom(), integer(), String.t()}
 
-  @type list_test :: [integer()]
+  @type list_test :: [e :: integer()]
 
-  @type map_test :: %{integer() => String.t()}
-  @type map_required_test :: %{required(atom()) => integer}
+  @type map_test :: %{(k :: integer()) => v :: String.t()}
+  @type map_required_test :: %{required(k :: atom()) => v :: integer}
   @type map_exact_test :: %{
           required(:key1) => integer(),
           required(:key2) => String.t(),
