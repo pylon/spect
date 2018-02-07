@@ -95,6 +95,10 @@ defmodule Spect do
     to_spec!(data, module, name)
   end
 
+  defp to_kind!(data, {:ann_type, _line, [{:var, _, _name}, type]}) do
+    to_kind!(data, type)
+  end
+
   defp to_kind!(data, {kind, _line, value}) do
     to_lit!(data, kind, value)
   end
@@ -389,7 +393,7 @@ defmodule Spect do
 
   # any typed map, recursive
   defp to_map!(data, [{:type, _line, _mode, [key_field, val_field]}])
-       when elem(key_field, 0) in [:type, :remote_type] do
+       when elem(key_field, 0) in [:type, :remote_type, :ann_type] do
     if is_map(data) do
       Enum.reduce(Map.to_list(data), %{}, fn {k, v}, r ->
         Map.put(r, to_kind!(k, key_field), to_kind!(v, val_field))
