@@ -6,7 +6,7 @@ defmodule Spect.Test do
 
   alias Spect.{ConvertError}
   alias Spect.Support.Specs
-  alias Spect.Support.Specs.{BasicStruct}
+  alias Spect.Support.Specs.{BasicStruct, AdvancedStruct}
 
   test "invalid spec" do
     assert_raise(ArgumentError, ~r/^module not found:/, fn ->
@@ -171,5 +171,29 @@ defmodule Spect.Test do
              {:ok, %{key1: 1, key2: "str"}}
 
     {:error, %ConvertError{}} = to_spec(1, Specs, :map_exact_test)
+  end
+
+  test "datetimes" do
+    {:error, %ConvertError{}} =
+      to_spec("non_dt_str", Specs, :datetime_test)
+
+    {:error, %ConvertError{}} = to_spec(1, Specs, :datetime_test)
+
+    now = DateTime.utc_now()
+    expect = {:ok, now}
+
+    assert to_spec(to_string(now), Specs, :datetime_test) == expect
+    assert to_spec(now, Specs, :datetime_test) == expect
+  end
+
+  test "user_types" do
+    now = DateTime.utc_now()
+    input = %{"datetime" => now, "example" => "a", "basics" => []}
+    expect = %AdvancedStruct{datetime: now, example: :a, basics: []}
+    assert to_spec(input, AdvancedStruct) == {:ok, expect}
+
+    input = %{input | "basics" => [Map.from_struct(%BasicStruct{})]}
+    expect = %{expect | basics: [%BasicStruct{}]}
+    assert to_spec(input, AdvancedStruct) == {:ok, expect}
   end
 end
