@@ -174,7 +174,9 @@ defmodule Spect.Test do
   end
 
   test "module type" do
-    assert to_spec!("Elixir.Spect.Support.Specs", Specs, :module_test) == Specs
+    assert to_spec!("Elixir.Spect.Support.Specs", Specs, :module_test) ==
+             Specs
+
     assert to_spec!(Specs, Specs, :module_test) == Specs
     {:error, %ConvertError{}} = to_spec("NonExistent", Specs, :module_test)
   end
