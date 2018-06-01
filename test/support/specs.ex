@@ -40,6 +40,8 @@ defmodule Spect.Support.Specs do
 
   @type datetime_test :: DateTime.t()
 
+  @type module_test :: module()
+
   defmodule BasicStruct do
     @moduledoc false
 

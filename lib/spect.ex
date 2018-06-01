@@ -164,13 +164,7 @@ defmodule Spect do
   end
 
   defp to_type!(data, module, :module, _args) do
-    mod = to_type!(data, module, :atom, [])
-
-    if Code.ensure_compiled?(mod) do
-      mod
-    else
-      raise(ConvertError, "invalid module: #{inspect(data)}")
-    end
+    to_type!(data, module, :atom, [])
   end
 
   # boolean
@@ -293,16 +287,6 @@ defmodule Spect do
   # map
   defp to_type!(data, module, :map, args) do
     to_map!(data, module, args)
-  end
-
-  # catch all
-  defp to_type!(data, _module, type, args) do
-    raise(
-      ConvertError,
-      "no matching type for #{type}; given the following data/args #{
-        inspect(data)
-      } #{inspect(args)}"
-    )
   end
 
   # -------------------------------------------------------------------------
