@@ -38,7 +38,13 @@ defmodule Spect.Support.Specs do
           :key3 => integer()
         }
 
+  @type datetime_test :: DateTime.t()
+
+  @type module_test :: module()
+
   defmodule BasicStruct do
+    @moduledoc false
+
     @type t :: %__MODULE__{
             atom: atom(),
             bool: boolean(),
@@ -52,5 +58,31 @@ defmodule Spect.Support.Specs do
               int: 1,
               str: "str",
               float: 3.14
+  end
+
+  defmodule AdvancedStruct do
+    @moduledoc false
+
+    @type example_type :: :a | :b | :c | :d
+
+    @type basic :: BasicStruct.t()
+
+    @type tuple_type :: {:a, :b}
+
+    @type t :: %__MODULE__{
+            datetime: DateTime.t(),
+            example: example_type(),
+            basics: [basic()],
+            map: %{example_type() => example_type()},
+            tuple: tuple_type()
+          }
+
+    @t0 DateTime.from_unix!(0)
+
+    defstruct datetime: @t0,
+              example: :a,
+              basics: [],
+              map: %{},
+              tuple: {:a, :b}
   end
 end
