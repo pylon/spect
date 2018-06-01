@@ -65,16 +65,22 @@ defmodule Spect.Support.Specs do
 
     @type basic :: BasicStruct.t()
 
+    @type tuple_type :: {:a, :b}
+
     @type t :: %__MODULE__{
-      datetime: DateTime.t(),
-      example: example_type(),
-      basics: [basic()]
-    }
+            datetime: DateTime.t(),
+            example: example_type(),
+            basics: [basic()],
+            map: %{example_type() => example_type()},
+            tuple: tuple_type()
+          }
 
     @t0 DateTime.from_unix!(0)
 
     defstruct datetime: @t0,
               example: :a,
-              basics: []
+              basics: [],
+              map: %{},
+              tuple: {:a, :b}
   end
 end

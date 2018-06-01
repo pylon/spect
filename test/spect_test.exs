@@ -174,8 +174,7 @@ defmodule Spect.Test do
   end
 
   test "datetimes" do
-    {:error, %ConvertError{}} =
-      to_spec("non_dt_str", Specs, :datetime_test)
+    {:error, %ConvertError{}} = to_spec("non_dt_str", Specs, :datetime_test)
 
     {:error, %ConvertError{}} = to_spec(1, Specs, :datetime_test)
 
@@ -188,12 +187,25 @@ defmodule Spect.Test do
 
   test "user_types" do
     now = DateTime.utc_now()
-    input = %{"datetime" => now, "example" => "a", "basics" => []}
-    expect = %AdvancedStruct{datetime: now, example: :a, basics: []}
-    assert to_spec(input, AdvancedStruct) == {:ok, expect}
 
-    input = %{input | "basics" => [Map.from_struct(%BasicStruct{})]}
-    expect = %{expect | basics: [%BasicStruct{}]}
-    assert to_spec(input, AdvancedStruct) == {:ok, expect}
+    input = %{
+      "datetime" => now,
+      "example" => "a",
+      "basics" => [],
+      "map" => %{},
+      "tuple" => ["a", "b"]
+    }
+
+    expect = %AdvancedStruct{datetime: now, example: :a, basics: []}
+    assert to_spec!(input, AdvancedStruct) == expect
+
+    input = %{
+      input
+      | "basics" => [Map.from_struct(%BasicStruct{})],
+        "map" => %{"c" => "d", "d" => "c"}
+    }
+
+    expect = %{expect | basics: [%BasicStruct{}], map: %{c: :d, d: :c}}
+    assert to_spec!(input, AdvancedStruct) == expect
   end
 end

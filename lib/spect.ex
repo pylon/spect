@@ -423,7 +423,12 @@ defmodule Spect do
 
   # any typed map, recursive
   defp to_map!(data, module, [{:type, _line, _mode, [key_field, val_field]}])
-       when elem(key_field, 0) in [:type, :remote_type, :ann_type] do
+       when elem(key_field, 0) in [
+              :type,
+              :remote_type,
+              :ann_type,
+              :user_type
+            ] do
     if is_map(data) do
       Enum.reduce(Map.to_list(data), %{}, fn {k, v}, r ->
         Map.put(
