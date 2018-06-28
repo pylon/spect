@@ -4,7 +4,7 @@ Type specification extensions for Elixir.
 
 ## Status
 [![Hex](http://img.shields.io/hexpm/v/spect.svg?style=flat)](https://hex.pm/packages/spect)
-[![Test](http://circleci-badges-max.herokuapp.com/img/pylon/spect?token=:circle-ci-token)](https://circleci.com/gh/pylon/spect)
+[![CircleCI](https://circleci.com/gh/pylon/spect.svg?style=shield)](https://circleci.com/gh/pylon/spect)
 [![Coverage](https://coveralls.io/repos/github/pylon/spect/badge.svg)](https://coveralls.io/github/pylon/spect)
 
 The API reference is available [here](https://hexdocs.pm/spect/).
