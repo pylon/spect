@@ -6,7 +6,7 @@ defmodule Spect.Test do
 
   alias Spect.{ConvertError}
   alias Spect.Support.Specs
-  alias Spect.Support.Specs.{BasicStruct, AdvancedStruct}
+  alias Spect.Support.Specs.{AdvancedStruct, BasicStruct}
 
   test "invalid spec" do
     assert_raise(ArgumentError, ~r/^module not found:/, fn ->
@@ -171,6 +171,7 @@ defmodule Spect.Test do
              {:ok, %{key1: 1, key2: "str"}}
 
     {:error, %ConvertError{}} = to_spec(1, Specs, :map_exact_test)
+    {:error, %ConvertError{}} = to_spec(%{key1: 1}, Specs, :map_exact_test)
   end
 
   test "module type" do
