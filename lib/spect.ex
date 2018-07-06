@@ -430,7 +430,7 @@ defmodule Spect do
   defp to_map!(data, module, fields) do
     if is_map(data) do
       Enum.reduce(fields, %{}, fn field, result ->
-        {:type, _line, _mode, [{_, _, k}, type]} = field
+        {:type, _line, mode, [{_, _, k}, type]} = field
 
         if Map.has_key?(data, k) do
           Map.put(result, k, to_kind!(Map.get(data, k), module, type))
@@ -440,6 +440,13 @@ defmodule Spect do
           if Map.has_key?(data, sk) do
             Map.put(result, k, to_kind!(Map.get(data, sk), module, type))
           else
+            if mode == :map_field_exact do
+              raise(
+                ConvertError,
+                "missing map required key: #{k} in #{inspect(data)}"
+              )
+            end
+
             result
           end
         end

@@ -34,8 +34,8 @@ defmodule Spect.Support.Specs do
   @type map_required_test :: %{required(k :: atom()) => v :: integer}
   @type map_exact_test :: %{
           required(:key1) => integer(),
-          required(:key2) => String.t(),
-          :key3 => integer()
+          :key2 => String.t(),
+          optional(:key3) => integer()
         }
 
   @type datetime_test :: DateTime.t()
