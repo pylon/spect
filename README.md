@@ -14,7 +14,7 @@ The API reference is available [here](https://hexdocs.pm/spect/).
 ```elixir
 def deps do
   [
-    {:spect, "~> 0.2"}
+    {:spect, "~> 0.3"}
   ]
 end
 ```
