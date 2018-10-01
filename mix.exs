@@ -43,11 +43,11 @@ defmodule Spect.MixProject do
   defp deps do
     [
       {:memoize, "~> 1.2"},
-      {:excoveralls, "~> 0.9", only: :test},
-      {:credo, "~> 0.9", only: [:dev, :test], runtime: false},
+      {:excoveralls, "~> 0.10", only: :test},
+      {:credo, "~> 0.10", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 0.5", only: [:dev], runtime: false},
       {:benchee, "~> 0.9", only: :dev, runtime: false},
-      {:ex_doc, "~> 0.18", only: :dev, runtime: false}
+      {:ex_doc, "~> 0.19", only: :dev, runtime: false}
     ]
   end
 
