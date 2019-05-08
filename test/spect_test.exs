@@ -63,7 +63,8 @@ defmodule Spect.Test do
     {:error, %ConvertError{}} = to_spec("invalid", Specs, :basic_integer)
 
     assert to_spec(1.0, Specs, :basic_float) === {:ok, 1.0}
-    {:error, %ConvertError{}} = to_spec(1, Specs, :basic_float)
+    assert to_spec(1, Specs, :basic_float) === {:ok, 1.0}
+    {:error, %ConvertError{}} = to_spec("1", Specs, :basic_float)
 
     assert to_spec(1.0, Specs, :basic_number) === {:ok, 1.0}
     assert to_spec(1, Specs, :basic_number) === {:ok, 1}
