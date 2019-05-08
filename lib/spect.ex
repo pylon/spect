@@ -187,10 +187,10 @@ defmodule Spect do
 
   # float
   defp to_type!(data, _module, :float, _args) do
-    if is_float(data) do
-      data
-    else
-      raise(ConvertError, "expected: float, found: #{inspect(data)}")
+    cond do
+      is_float(data) -> data
+      is_integer(data) -> data / 1.0
+      true -> raise(ConvertError, "expected: float, found: #{inspect(data)}")
     end
   end
 
