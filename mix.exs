@@ -44,9 +44,9 @@ defmodule Spect.MixProject do
     [
       {:memoize, "~> 1.2"},
       {:excoveralls, "~> 0.10", only: :test},
-      {:credo, "~> 0.10", only: [:dev, :test], runtime: false},
+      {:credo, "~> 1.0", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 0.5", only: [:dev], runtime: false},
-      {:benchee, "~> 0.9", only: :dev, runtime: false},
+      {:benchee, "~> 1.0", only: :dev, runtime: false},
       {:ex_doc, "~> 0.19", only: :dev, runtime: false}
     ]
   end
