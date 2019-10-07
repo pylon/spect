@@ -64,13 +64,8 @@ defmodule Spect do
   """
   @spec to_spec!(data :: any, module :: atom, name :: atom) :: any
   def to_spec!(data, module, name \\ :t) do
-    types = load_types(module)
-
-    if types === nil do
-      raise ArgumentError, "module not found: #{module}"
-    end
-
-    types
+    module
+    |> load_types()
     |> Keyword.values()
     |> Enum.filter(fn {k, _v, _a} -> k == name end)
     |> case do
@@ -80,7 +75,10 @@ defmodule Spect do
   end
 
   defmemo load_types(module) do
-    Kernel.Typespec.beam_types(module)
+    case Code.Typespec.fetch_types(module) do
+      {:ok, types} -> types
+      :error -> raise ArgumentError, "module not found: #{module}"
+    end
   end
 
   # -------------------------------------------------------------------------
