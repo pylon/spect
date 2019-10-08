@@ -6,7 +6,7 @@ defmodule Spect.MixProject do
     [
       app: :spect,
       name: "Spect",
-      version: "0.3.1",
+      version: "0.3.2",
       elixir: "~> 1.7",
       elixirc_paths: elixirc_paths(Mix.env()),
       description: "Type specification extensions for Elixir.",
@@ -22,7 +22,10 @@ defmodule Spect.MixProject do
         ignore_warnings: ".dialyzerignore",
         plt_add_deps: :transitive
       ],
-      docs: [extras: ["README.md"]]
+      docs: [
+        main: "readme",
+        extras: ["README.md"]
+      ]
     ]
   end
 
