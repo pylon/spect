@@ -7,7 +7,7 @@ Type specification extensions for Elixir.
 [![CircleCI](https://circleci.com/gh/pylon/spect.svg?style=shield)](https://circleci.com/gh/pylon/spect)
 [![Coverage](https://coveralls.io/repos/github/pylon/spect/badge.svg)](https://coveralls.io/github/pylon/spect)
 
-The API reference is available [here](https://hexdocs.pm/spect/).
+The API reference is available [here](https://hexdocs.pm/spect/api-reference.html).
 
 ## Installation
 
@@ -108,16 +108,16 @@ Spect tries to do.
 
 ## License
 
-Copyright 2018 Pylon, Inc.
+Copyright 2019 Pylon, Inc.
 
-  Licensed under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
 
-      http://www.apache.org/licenses/LICENSE-2.0
+[http://www.apache.org/licenses/LICENSE-2.0](http://www.apache.org/licenses/LICENSE-2.0)
 
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.

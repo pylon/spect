@@ -1,55 +1,86 @@
 defmodule Spect do
   @moduledoc """
-  elixir typespec enhancements
+  Elixir typespec enhancements
   """
 
   use Memoize
 
   defmodule ConvertError do
+    @moduledoc """
+    A custom exception raised when a field could not be converted
+    to the type declared by the target typespec.
+    """
     defexception message: "could not map to spec"
   end
 
   @doc """
-  typespec-driven object decoding
+  Typespec-driven object decoding
 
   This function converts a data structure into a new one derived from a type
   specification. This provides for the effective decoding of (nested) data
   structures from serialization formats that do not support Elixir's rich
-  set of types (json, etc.). Atoms can be decoded from strings, tuples from
+  set of types (JSON, etc.). Atoms can be decoded from strings, tuples from
   lists, structs from maps, etc.
 
   `data` is the data structure to decode, `module` is the name of the module
   containing the type specification, and `name` is the name of the @type
   definition within the module (defaults to `:t`).
 
+  ## Examples
+
   As mentioned above, a common use case is to decode a JSON document into
-  an Elixir struct, for example using the poison parser:
+  an Elixir struct, for example using the `Poison` parser:
     ```elixir
       "test.json"
       |> File.read!()
       |> Poison.Parser.parse!()
-      |> Spect.to_spec!(My.Master)
+      |> Spect.to_spec!(Filmography)
     ```
 
-  where the `My` module might contain the following structs:
+  where the `Filmography` module might contain the following structs:
     ```elixir
-      defmodule My do
-        defmodule Master do
+      defmodule Filmography do
+
+        defmodule Person do
           @type t :: %__MODULE__{
-            rest: integer(),
-            details: %{String.t() => My.Detail.t()}
+            name: String.t(),
+            birth_year: pos_integer()
           }
-          defstruct [rest: 2, details: %{}]
+
+          defstruct [:name, :birth_year]
         end
 
-        defmodule Detail do
-          @type t :: %__MODULE__{
-            nest: integer()
-          }
-          defstruct [nest: 1]
-        end
+        @type acting_credit :: %{
+            film: String.t(),
+            lead?: boolean()
+        }
+
+        @type t :: %__MODULE__{
+            subject: Person.t(),
+            acting_credits: [acting_credit()]
+        }
+
+        defstruct [:subject, acting_credits: []]
       end
     ```
+
+  The conventional name for a module's primary type is `t`,
+  so that is the default value for `to_spec`'s third argument. However, that
+  name is not mandatory, and modules can expose more than one type,
+  so `to_spec` will accept any atom as a third argument and attempt to find a
+  type with that name. Continuing with the above example:
+    ```elixir
+    iex> data = %{"film" => "Amadeus", "lead?" => true}
+    %{"film" => "Amadeus", "lead?" => true}
+
+    iex> Spect.to_spec(data, Filmography, :acting_credit)
+    {:ok, %{film: "Amadeus", lead?: true}}
+    ```
+
+  If any of the nested fields in the typespec is declared as a `DateTime.t()`,
+  `to_spec` will convert the value only if it is an
+  [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) string or already
+  a `DateTime` struct.
   """
   @spec to_spec(data :: any, module :: atom, name :: atom) ::
           {:ok, any} | {:error, any}
@@ -60,7 +91,8 @@ defmodule Spect do
   end
 
   @doc """
-  decodes an object from a typespec, raising on error
+  Decodes an object from a typespec, raising `ArgumentError` if the type
+  is not found or `Spect.ConvertError` for a value error during conversion.
   """
   @spec to_spec!(data :: any, module :: atom, name :: atom) :: any
   def to_spec!(data, module, name \\ :t) do
@@ -74,6 +106,7 @@ defmodule Spect do
     end
   end
 
+  @doc false
   defmemo load_types(module) do
     case Code.Typespec.fetch_types(module) do
       {:ok, types} -> types
