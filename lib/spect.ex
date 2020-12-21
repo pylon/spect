@@ -152,7 +152,7 @@ defmodule Spect do
   defp to_lit!(data, :atom, value) when is_binary(data) do
     ^value = String.to_existing_atom(data)
   rescue
-    _ -> reraise(ConvertError, "invalid atom: #{value}", System.stacktrace())
+    _ -> reraise(ConvertError, "invalid atom: #{value}", __STACKTRACE__)
   end
 
   # atom/bool/integer literal
@@ -187,11 +187,7 @@ defmodule Spect do
     end
   rescue
     _ ->
-      reraise(
-        ConvertError,
-        "invalid atom: #{inspect(data)}",
-        System.stacktrace()
-      )
+      reraise(ConvertError, "invalid atom: #{inspect(data)}", __STACKTRACE__)
   end
 
   defp to_type!(data, module, :module, _args) do

@@ -42,6 +42,9 @@ defmodule Spect.Support.Specs do
 
   @type module_test :: module()
 
+  @type parameterizer(p) :: p | nil
+  @type parameterized :: __MODULE__.parameterizer(integer())
+
   defmodule BasicStruct do
     @moduledoc false
 
