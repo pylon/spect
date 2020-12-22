@@ -6,8 +6,8 @@ defmodule Spect.MixProject do
     [
       app: :spect,
       name: "Spect",
-      version: "0.3.2",
-      elixir: "~> 1.7",
+      version: "0.4.0",
+      elixir: "~> 1.11",
       elixirc_paths: elixirc_paths(Mix.env()),
       description: "Type specification extensions for Elixir.",
       package: package(),

@@ -195,6 +195,14 @@ defmodule Spect.Test do
     assert to_spec(now, Specs, :datetime_test) == expect
   end
 
+  test "parameterized types" do
+    assert to_spec(1234, Specs, :maybe_int) === {:ok, 1234}
+    assert to_spec(nil, Specs, :maybe_int) === {:ok, nil}
+
+    assert to_spec(%{test: "a"}, Specs.ParameterizedStruct) ===
+             {:ok, %Specs.ParameterizedStruct{test: "a"}}
+  end
+
   test "user_types" do
     now = DateTime.utc_now()
 

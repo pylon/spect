@@ -1,4 +1,6 @@
 defmodule Spect.Support.Specs do
+  @moduledoc false
+
   @type literal_atom :: :atom
   @type literal_nil :: nil
   @type literal_true :: true
@@ -42,8 +44,8 @@ defmodule Spect.Support.Specs do
 
   @type module_test :: module()
 
-  @type parameterizer(p) :: p | nil
-  @type parameterized :: __MODULE__.parameterizer(integer())
+  @type maybe(p) :: p | nil
+  @type maybe_int :: __MODULE__.maybe(integer())
 
   defmodule BasicStruct do
     @moduledoc false
@@ -87,5 +89,15 @@ defmodule Spect.Support.Specs do
               basics: [],
               map: %{},
               tuple: {:a, :b}
+  end
+
+  defmodule ParameterizedStruct do
+    @moduledoc false
+
+    @type t :: %__MODULE__{
+            test: Spect.Support.Specs.maybe(binary())
+          }
+
+    defstruct [:test]
   end
 end
