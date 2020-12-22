@@ -4,7 +4,7 @@ defmodule Spect.Test do
   import ExUnit.Assertions
   import Spect
 
-  alias Spect.{ConvertError}
+  alias Spect.ConvertError
   alias Spect.Support.Specs
   alias Spect.Support.Specs.{AdvancedStruct, BasicStruct}
 
@@ -193,6 +193,14 @@ defmodule Spect.Test do
 
     assert to_spec(to_string(now), Specs, :datetime_test) == expect
     assert to_spec(now, Specs, :datetime_test) == expect
+  end
+
+  test "parameterized types" do
+    assert to_spec(1234, Specs, :maybe_int) === {:ok, 1234}
+    assert to_spec(nil, Specs, :maybe_int) === {:ok, nil}
+
+    assert to_spec(%{test: "a"}, Specs.ParameterizedStruct) ===
+             {:ok, %Specs.ParameterizedStruct{test: "a"}}
   end
 
   test "user_types" do

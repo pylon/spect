@@ -94,15 +94,19 @@ defmodule Spect do
   Decodes an object from a typespec, raising `ArgumentError` if the type
   is not found or `Spect.ConvertError` for a value error during conversion.
   """
-  @spec to_spec!(data :: any, module :: atom, name :: atom) :: any
-  def to_spec!(data, module, name \\ :t) do
+  @spec to_spec!(data :: any, module :: atom, name :: atom, args :: list()) ::
+          any
+  def to_spec!(data, module, name \\ :t, args \\ []) do
     module
     |> load_types()
     |> Keyword.values()
     |> Enum.filter(fn {k, _v, _a} -> k == name end)
     |> case do
-      [{^name, type, _args}] -> to_kind!(data, module, type)
-      _ -> raise ArgumentError, "type not found: #{module}.#{name}"
+      [{^name, type, vars}] ->
+        to_kind!(data, module, type, Enum.zip(vars, args) |> Map.new())
+
+      _ ->
+        raise ArgumentError, "type not found: #{module}.#{name}"
     end
   end
 
@@ -118,29 +122,38 @@ defmodule Spect do
   # top-level kind demultiplexing
   # -------------------------------------------------------------------------
 
-  defp to_kind!(data, module, {:type, _line, type, args}) do
-    to_type!(data, module, type, args)
+  defp to_kind!(data, module, {:type, _line, type, args}, params) do
+    to_type!(data, module, type, args, params)
   end
 
-  defp to_kind!(data, _module, {:remote_type, _line, type}) do
-    [{:atom, _, module}, {:atom, _, name}, []] = type
+  defp to_kind!(data, _module, {:remote_type, _line, type}, _params) do
+    [{:atom, _, module}, {:atom, _, name}, args] = type
 
     if module == DateTime and name == :t do
       to_datetime!(data)
     else
-      to_spec!(data, module, name)
+      to_spec!(data, module, name, args)
     end
   end
 
-  defp to_kind!(data, module, {:ann_type, _line, [{:var, _, _name}, type]}) do
-    to_kind!(data, module, type)
+  defp to_kind!(
+         data,
+         module,
+         {:ann_type, _line, [{:var, _, _name}, type]},
+         params
+       ) do
+    to_kind!(data, module, type, params)
   end
 
-  defp to_kind!(data, module, {:user_type, _line, name, _args}) do
-    to_spec!(data, module, name)
+  defp to_kind!(data, module, {:user_type, _line, name, args}, _params) do
+    to_spec!(data, module, name, args)
   end
 
-  defp to_kind!(data, _module, {kind, _line, value}) do
+  defp to_kind!(data, module, {:var, _line, _value} = var, params) do
+    to_kind!(data, module, Map.fetch!(params, var), params)
+  end
+
+  defp to_kind!(data, _module, {kind, _line, value}, _params) do
     to_lit!(data, kind, value)
   end
 
@@ -152,7 +165,7 @@ defmodule Spect do
   defp to_lit!(data, :atom, value) when is_binary(data) do
     ^value = String.to_existing_atom(data)
   rescue
-    _ -> reraise(ConvertError, "invalid atom: #{value}", System.stacktrace())
+    _ -> reraise(ConvertError, "invalid atom: #{value}", __STACKTRACE__)
   end
 
   # atom/bool/integer literal
@@ -169,17 +182,17 @@ defmodule Spect do
   # -------------------------------------------------------------------------
 
   # any type
-  defp to_type!(data, _module, :any, _args) do
+  defp to_type!(data, _module, :any, _args, _params) do
     data
   end
 
   # none type
-  defp to_type!(_data, _module, :none, _args) do
+  defp to_type!(_data, _module, :none, _args, _params) do
     raise ConvertError
   end
 
   # atom
-  defp to_type!(data, _module, :atom, _args) do
+  defp to_type!(data, _module, :atom, _args, _params) do
     cond do
       is_atom(data) -> data
       is_binary(data) -> String.to_existing_atom(data)
@@ -187,19 +200,15 @@ defmodule Spect do
     end
   rescue
     _ ->
-      reraise(
-        ConvertError,
-        "invalid atom: #{inspect(data)}",
-        System.stacktrace()
-      )
+      reraise(ConvertError, "invalid atom: #{inspect(data)}", __STACKTRACE__)
   end
 
-  defp to_type!(data, module, :module, _args) do
-    to_type!(data, module, :atom, [])
+  defp to_type!(data, module, :module, _args, params) do
+    to_type!(data, module, :atom, [], params)
   end
 
   # boolean
-  defp to_type!(data, _module, :boolean, _args) do
+  defp to_type!(data, _module, :boolean, _args, _params) do
     if is_boolean(data) do
       data
     else
@@ -208,7 +217,7 @@ defmodule Spect do
   end
 
   # integer
-  defp to_type!(data, _module, :integer, _args) do
+  defp to_type!(data, _module, :integer, _args, _params) do
     if is_integer(data) do
       data
     else
@@ -217,7 +226,7 @@ defmodule Spect do
   end
 
   # float
-  defp to_type!(data, _module, :float, _args) do
+  defp to_type!(data, _module, :float, _args, _params) do
     cond do
       is_float(data) -> data
       is_integer(data) -> data / 1.0
@@ -226,7 +235,7 @@ defmodule Spect do
   end
 
   # number
-  defp to_type!(data, _module, :number, _args) do
+  defp to_type!(data, _module, :number, _args, _params) do
     if is_number(data) do
       data
     else
@@ -235,7 +244,7 @@ defmodule Spect do
   end
 
   # negative integer
-  defp to_type!(data, _module, :neg_integer, _args) do
+  defp to_type!(data, _module, :neg_integer, _args, _params) do
     if is_integer(data) and data < 0 do
       data
     else
@@ -247,7 +256,7 @@ defmodule Spect do
   end
 
   # non-negative integer
-  defp to_type!(data, _module, :non_neg_integer, _args) do
+  defp to_type!(data, _module, :non_neg_integer, _args, _params) do
     if is_integer(data) and data >= 0 do
       data
     else
@@ -259,7 +268,7 @@ defmodule Spect do
   end
 
   # positive integer
-  defp to_type!(data, _module, :pos_integer, _args) do
+  defp to_type!(data, _module, :pos_integer, _args, _params) do
     if is_integer(data) and data > 0 do
       data
     else
@@ -271,7 +280,7 @@ defmodule Spect do
   end
 
   # string
-  defp to_type!(data, _module, :binary, _args) do
+  defp to_type!(data, _module, :binary, _args, _params) do
     if is_binary(data) do
       data
     else
@@ -280,11 +289,11 @@ defmodule Spect do
   end
 
   # union a | b | c, return the first match, recursive
-  defp to_type!(data, module, :union, types) do
+  defp to_type!(data, module, :union, types, params) do
     result =
       Enum.reduce_while(types, ConvertError, fn type, result ->
         try do
-          {:halt, to_kind!(data, module, type)}
+          {:halt, to_kind!(data, module, type, params)}
         rescue
           _ -> {:cont, result}
         end
@@ -297,17 +306,17 @@ defmodule Spect do
   end
 
   # tuple
-  defp to_type!(data, module, :tuple, args) do
-    to_tuple!(data, module, args)
+  defp to_type!(data, module, :tuple, args, params) do
+    to_tuple!(data, module, args, params)
   end
 
   # list
-  defp to_type!(data, module, :list, args) do
-    to_list!(data, module, args)
+  defp to_type!(data, module, :list, args, params) do
+    to_list!(data, module, args, params)
   end
 
   # empty list
-  defp to_type!(data, _module, nil, []) do
+  defp to_type!(data, _module, nil, [], _params) do
     if is_list(data) do
       data
     else
@@ -316,8 +325,8 @@ defmodule Spect do
   end
 
   # map
-  defp to_type!(data, module, :map, args) do
-    to_map!(data, module, args)
+  defp to_type!(data, module, :map, args, params) do
+    to_map!(data, module, args, params)
   end
 
   # -------------------------------------------------------------------------
@@ -325,7 +334,7 @@ defmodule Spect do
   # -------------------------------------------------------------------------
 
   # any tuple, list->tuple
-  defp to_tuple!(data, _module, :any) do
+  defp to_tuple!(data, _module, :any, _params) do
     cond do
       is_tuple(data) -> data
       is_list(data) -> List.to_tuple(data)
@@ -334,14 +343,14 @@ defmodule Spect do
   end
 
   # exact tuple, list->tuple, recursive
-  defp to_tuple!(data, module, types) do
+  defp to_tuple!(data, module, types, params) do
     cond do
       is_tuple(data) ->
-        to_tuple!(Tuple.to_list(data), module, types)
+        to_tuple!(Tuple.to_list(data), module, types, params)
 
       is_list(data) and length(data) === length(types) ->
         Enum.reduce(Enum.zip(data, types), {}, fn {data, type}, result ->
-          Tuple.append(result, to_kind!(data, module, type))
+          Tuple.append(result, to_kind!(data, module, type, params))
         end)
 
       true ->
@@ -354,16 +363,16 @@ defmodule Spect do
   # -------------------------------------------------------------------------
 
   # typed list, recursive
-  defp to_list!(data, module, [type]) do
+  defp to_list!(data, module, [type], params) do
     if is_list(data) do
-      Enum.map(data, &to_kind!(&1, module, type))
+      Enum.map(data, &to_kind!(&1, module, type, params))
     else
       raise(ConvertError, "expected: list, found: #{inspect(data)}")
     end
   end
 
   # any list
-  defp to_list!(data, _module, []) do
+  defp to_list!(data, _module, [], _params) do
     if is_list(data) do
       data
     else
@@ -376,11 +385,16 @@ defmodule Spect do
   # -------------------------------------------------------------------------
 
   # any map -> struct-like map
-  defp to_map!(data, _module, [
-         {:type, _, :map_field_exact,
-          [{:atom, _, :__struct__}, {:type, _, :atom, []}]}
-         | _fields
-       ]) do
+  defp to_map!(
+         data,
+         _module,
+         [
+           {:type, _, :map_field_exact,
+            [{:atom, _, :__struct__}, {:type, _, :atom, []}]}
+           | _fields
+         ],
+         _params
+       ) do
     if is_map(data) do
       Map.new(Map.to_list(data), fn
         {k, v} when is_binary(k) -> {String.to_existing_atom(k), v}
@@ -392,22 +406,31 @@ defmodule Spect do
   end
 
   # any map -> exact struct, recursive
-  defp to_map!(data, module, [
-         {:type, _, :map_field_exact,
-          [{:atom, _, :__struct__}, {:atom, _, struct}]}
-         | fields
-       ]) do
+  defp to_map!(
+         data,
+         module,
+         [
+           {:type, _, :map_field_exact,
+            [{:atom, _, :__struct__}, {:atom, _, struct}]}
+           | fields
+         ],
+         params
+       ) do
     if is_map(data) do
       Enum.reduce(fields, Kernel.struct(struct), fn field, result ->
         {:type, _line, :map_field_exact, [{:atom, _, k}, type]} = field
 
         if Map.has_key?(data, k) do
-          Map.put(result, k, to_kind!(Map.get(data, k), module, type))
+          Map.put(result, k, to_kind!(Map.get(data, k), module, type, params))
         else
           sk = to_string(k)
 
           if Map.has_key?(data, sk) do
-            Map.put(result, k, to_kind!(Map.get(data, sk), module, type))
+            Map.put(
+              result,
+              k,
+              to_kind!(Map.get(data, sk), module, type, params)
+            )
           else
             result
           end
@@ -419,7 +442,7 @@ defmodule Spect do
   end
 
   # empty map
-  defp to_map!(data, _module, []) do
+  defp to_map!(data, _module, [], _params) do
     if is_map(data) do
       data
     else
@@ -428,7 +451,7 @@ defmodule Spect do
   end
 
   # any map
-  defp to_map!(data, _module, :any) do
+  defp to_map!(data, _module, :any, _params) do
     if is_map(data) do
       data
     else
@@ -437,7 +460,12 @@ defmodule Spect do
   end
 
   # any typed map, recursive
-  defp to_map!(data, module, [{:type, _line, _mode, [key_field, val_field]}])
+  defp to_map!(
+         data,
+         module,
+         [{:type, _line, _mode, [key_field, val_field]}],
+         params
+       )
        when elem(key_field, 0) in [
               :type,
               :remote_type,
@@ -448,8 +476,8 @@ defmodule Spect do
       Enum.reduce(Map.to_list(data), %{}, fn {k, v}, r ->
         Map.put(
           r,
-          to_kind!(k, module, key_field),
-          to_kind!(v, module, val_field)
+          to_kind!(k, module, key_field, params),
+          to_kind!(v, module, val_field, params)
         )
       end)
     else
@@ -458,18 +486,22 @@ defmodule Spect do
   end
 
   # any map, exact keys, recursive
-  defp to_map!(data, module, fields) do
+  defp to_map!(data, module, fields, params) do
     if is_map(data) do
       Enum.reduce(fields, %{}, fn field, result ->
         {:type, _line, mode, [{_, _, k}, type]} = field
 
         if Map.has_key?(data, k) do
-          Map.put(result, k, to_kind!(Map.get(data, k), module, type))
+          Map.put(result, k, to_kind!(Map.get(data, k), module, type, params))
         else
           sk = to_string(k)
 
           if Map.has_key?(data, sk) do
-            Map.put(result, k, to_kind!(Map.get(data, sk), module, type))
+            Map.put(
+              result,
+              k,
+              to_kind!(Map.get(data, sk), module, type, params)
+            )
           else
             if mode == :map_field_exact do
               raise(
