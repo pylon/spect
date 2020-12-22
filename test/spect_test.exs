@@ -4,7 +4,7 @@ defmodule Spect.Test do
   import ExUnit.Assertions
   import Spect
 
-  alias Spect.{ConvertError}
+  alias Spect.ConvertError
   alias Spect.Support.Specs
   alias Spect.Support.Specs.{AdvancedStruct, BasicStruct}
 
