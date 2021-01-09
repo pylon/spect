@@ -200,7 +200,7 @@ defmodule Spect.Test do
     assert to_spec(nil, Specs, :maybe_int) === {:ok, nil}
 
     assert to_spec(%{test: "a"}, Specs.ParameterizedStruct) ===
-             {:ok, %Specs.ParameterizedStruct{test: "a"}}
+             {:ok, %Specs.ParameterizedStruct{test: :a}}
   end
 
   test "user_types" do

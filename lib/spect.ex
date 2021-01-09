@@ -126,13 +126,14 @@ defmodule Spect do
     to_type!(data, module, type, args, params)
   end
 
-  defp to_kind!(data, _module, {:remote_type, _line, type}, _params) do
-    [{:atom, _, module}, {:atom, _, name}, args] = type
+  defp to_kind!(data, module, {:remote_type, _line, type}, _params) do
+    [{:atom, _, remote_module}, {:atom, _, name}, args] = type
 
-    if module == DateTime and name == :t do
+    if remote_module == DateTime and name == :t do
       to_datetime!(data)
     else
-      to_spec!(data, module, name, args)
+      params = Enum.map(args, &{module, &1})
+      to_spec!(data, remote_module, name, params)
     end
   end
 
@@ -146,11 +147,13 @@ defmodule Spect do
   end
 
   defp to_kind!(data, module, {:user_type, _line, name, args}, _params) do
-    to_spec!(data, module, name, args)
+    params = Enum.map(args, &{module, &1})
+    to_spec!(data, module, name, params)
   end
 
-  defp to_kind!(data, module, {:var, _line, _value} = var, params) do
-    to_kind!(data, module, Map.fetch!(params, var), params)
+  defp to_kind!(data, _module, {:var, _line, _value} = var, params) do
+    {module, type} = Map.fetch!(params, var)
+    to_kind!(data, module, type, params)
   end
 
   defp to_kind!(data, _module, {kind, _line, value}, _params) do
