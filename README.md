@@ -19,6 +19,12 @@ def deps do
 end
 ```
 
+Note that if you use the `:strip_beams` option when compiling your project
+with [mix release](https://hexdocs.pm/mix/Mix.Release.html) or
+[mix escript.build](https://hexdocs.pm/mix/Mix.Tasks.Escript.Build.html),
+typespecs will not be included in the compiled beams, and spect will not
+be able to check/map your types.
+
 ## Features
 
 ### Structure Decoding
