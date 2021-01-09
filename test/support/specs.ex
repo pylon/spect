@@ -94,8 +94,10 @@ defmodule Spect.Support.Specs do
   defmodule ParameterizedStruct do
     @moduledoc false
 
+    @type example_type :: :a | :b | :c | :d
+
     @type t :: %__MODULE__{
-            test: Spect.Support.Specs.maybe(binary())
+            test: Spect.Support.Specs.maybe(example_type)
           }
 
     defstruct [:test]
