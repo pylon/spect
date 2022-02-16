@@ -6,6 +6,7 @@ defmodule Spect.Support.Specs do
   @type literal_true :: true
   @type literal_false :: false
   @type literal_1 :: 1
+  @type literal_minus_1 :: -1
   @type literal_list :: []
   @type literal_map :: %{}
 
