@@ -156,6 +156,10 @@ defmodule Spect do
     to_kind!(data, module, type, params)
   end
 
+  defp to_kind!(data, _module, {:op, _, :-, {:integer, _, value}}, _params) do
+    to_lit!(data, :integer, -value)
+  end
+
   defp to_kind!(data, _module, {kind, _line, value}, _params) do
     to_lit!(data, kind, value)
   end

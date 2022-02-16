@@ -36,6 +36,9 @@ defmodule Spect.Test do
     assert to_spec(1, Specs, :literal_1) === {:ok, 1}
     {:error, %ConvertError{}} = to_spec(2, Specs, :literal_1)
 
+    assert to_spec(-1, Specs, :literal_minus_1) === {:ok, -1}
+    {:error, %ConvertError{}} = to_spec(-2, Specs, :literal_minus_1)
+
     assert to_spec([], Specs, :literal_list) === {:ok, []}
     {:error, %ConvertError{}} = to_spec(1, Specs, :literal_list)
 
