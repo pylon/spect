@@ -196,7 +196,8 @@ defmodule Spect.Test do
   end
 
   test "naive datetimes" do
-    {:error, %ConvertError{}} = to_spec("non_dt_str", Specs, :naivedatetime_test)
+    {:error, %ConvertError{}} =
+      to_spec("non_dt_str", Specs, :naivedatetime_test)
 
     {:error, %ConvertError{}} = to_spec(1, Specs, :naivedatetime_test)
 

@@ -540,6 +540,7 @@ defmodule Spect do
         case Date.from_iso8601(data) do
           {:ok, dt} ->
             dt
+
           {:error, reason} ->
             raise(
               ConvertError,
@@ -547,14 +548,14 @@ defmodule Spect do
             )
         end
 
-        is_map(data) and data.__struct__ == Date ->
-          data
+      is_map(data) and data.__struct__ == Date ->
+        data
 
-        true ->
-          raise(
-            ConvertError,
-            "expected ISO8601 string or Date struct, found: #{inspect(data)}"
-          )
+      true ->
+        raise(
+          ConvertError,
+          "expected ISO8601 string or Date struct, found: #{inspect(data)}"
+        )
     end
   end
 
@@ -564,6 +565,7 @@ defmodule Spect do
         case NaiveDateTime.from_iso8601(data) do
           {:ok, dt} ->
             dt
+
           {:error, reason} ->
             raise(
               ConvertError,
@@ -571,14 +573,14 @@ defmodule Spect do
             )
         end
 
-        is_map(data) and data.__struct__ == NaiveDateTime ->
-          data
+      is_map(data) and data.__struct__ == NaiveDateTime ->
+        data
 
-        true ->
-          raise(
-            ConvertError,
-            "expected ISO8601 string or NaiveDateTime struct, found: #{inspect(data)}"
-          )
+      true ->
+        raise(
+          ConvertError,
+          "expected ISO8601 string or NaiveDateTime struct, found: #{inspect(data)}"
+        )
     end
   end
 
