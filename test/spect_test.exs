@@ -183,6 +183,31 @@ defmodule Spect.Test do
     {:error, %ConvertError{}} = to_spec("NonExistent", Specs, :module_test)
   end
 
+  test "dates" do
+    {:error, %ConvertError{}} = to_spec("non_dt_str", Specs, :date_test)
+
+    {:error, %ConvertError{}} = to_spec(1, Specs, :date_test)
+
+    today = Date.utc_today()
+    expect = {:ok, today}
+
+    assert to_spec(to_string(today), Specs, :date_test) == expect
+    assert to_spec(today, Specs, :date_test) == expect
+  end
+
+  test "naive datetimes" do
+    {:error, %ConvertError{}} =
+      to_spec("non_dt_str", Specs, :naivedatetime_test)
+
+    {:error, %ConvertError{}} = to_spec(1, Specs, :naivedatetime_test)
+
+    now = NaiveDateTime.utc_now()
+    expect = {:ok, now}
+
+    assert to_spec(to_string(now), Specs, :naivedatetime_test) == expect
+    assert to_spec(now, Specs, :naivedatetime_test) == expect
+  end
+
   test "datetimes" do
     {:error, %ConvertError{}} = to_spec("non_dt_str", Specs, :datetime_test)
 
