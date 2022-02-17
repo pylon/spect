@@ -18,9 +18,9 @@ defmodule Spect do
 
   This function converts a data structure into a new one derived from a type
   specification. This provides for the effective decoding of (nested) data
-  structures from serialization formats that do not support Elixir's rich
-  set of types (JSON, etc.). Atoms can be decoded from strings, tuples from
-  lists, structs from maps, etc.
+  structures from serialization formats that do not support Elixir's rich set of
+  types (JSON, etc.). Atoms can be decoded from strings, tuples from lists,
+  structs from maps, etc.
 
   `data` is the data structure to decode, `module` is the name of the module
   containing the type specification, and `name` is the name of the @type
@@ -28,8 +28,8 @@ defmodule Spect do
 
   ## Examples
 
-  As mentioned above, a common use case is to decode a JSON document into
-  an Elixir struct, for example using the `Poison` parser:
+  As mentioned above, a common use case is to decode a JSON document into an
+  Elixir struct, for example using the `Poison` parser:
     ```elixir
       "test.json"
       |> File.read!()
@@ -64,11 +64,11 @@ defmodule Spect do
       end
     ```
 
-  The conventional name for a module's primary type is `t`,
-  so that is the default value for `to_spec`'s third argument. However, that
-  name is not mandatory, and modules can expose more than one type,
-  so `to_spec` will accept any atom as a third argument and attempt to find a
-  type with that name. Continuing with the above example:
+  The conventional name for a module's primary type is `t`, so that is the
+  default value for `to_spec`'s third argument. However, that name is not
+  mandatory, and modules can expose more than one type, so `to_spec` will accept
+  any atom as a third argument and attempt to find a type with that name.
+  Continuing with the above example:
     ```elixir
     iex> data = %{"film" => "Amadeus", "lead?" => true}
     %{"film" => "Amadeus", "lead?" => true}
@@ -77,10 +77,10 @@ defmodule Spect do
     {:ok, %{film: "Amadeus", lead?: true}}
     ```
 
-  If any of the nested fields in the typespec is declared as a `DateTime.t()`,
-  `to_spec` will convert the value only if it is an
-  [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) string or already
-  a `DateTime` struct.
+  If any of the nested fields in the typespec is declared as a `Date.t()`,
+  `NaiveDateTime.t()`, or `DateTime.t()`, `to_spec` will convert the value only
+  if it is an [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) string or
+  already a `Date` / `NaiveDateTime` / `DateTime` struct.
   """
   @spec to_spec(data :: any, module :: atom, name :: atom) ::
           {:ok, any} | {:error, any}
@@ -129,11 +129,19 @@ defmodule Spect do
   defp to_kind!(data, module, {:remote_type, _line, type}, _params) do
     [{:atom, _, remote_module}, {:atom, _, name}, args] = type
 
-    if remote_module == DateTime and name == :t do
-      to_datetime!(data)
-    else
-      params = Enum.map(args, &{module, &1})
-      to_spec!(data, remote_module, name, params)
+    cond do
+      remote_module == Date and name == :t ->
+        to_date!(data)
+
+      remote_module == NaiveDateTime and name == :t ->
+        to_naivedatetime!(data)
+
+      remote_module == DateTime and name == :t ->
+        to_datetime!(data)
+
+      true ->
+        params = Enum.map(args, &{module, &1})
+        to_spec!(data, remote_module, name, params)
     end
   end
 
@@ -529,6 +537,56 @@ defmodule Spect do
   # -------------------------------------------------------------------------
   # miscellaneous types
   # -------------------------------------------------------------------------
+
+  defp to_date!(data) do
+    cond do
+      is_binary(data) ->
+        case Date.from_iso8601(data) do
+          {:ok, dt} ->
+            dt
+
+          {:error, reason} ->
+            raise(
+              ConvertError,
+              "invalid string format for Date: #{reason}"
+            )
+        end
+
+      is_map(data) and data.__struct__ == Date ->
+        data
+
+      true ->
+        raise(
+          ConvertError,
+          "expected ISO8601 string or Date struct, found: #{inspect(data)}"
+        )
+    end
+  end
+
+  defp to_naivedatetime!(data) do
+    cond do
+      is_binary(data) ->
+        case NaiveDateTime.from_iso8601(data) do
+          {:ok, dt} ->
+            dt
+
+          {:error, reason} ->
+            raise(
+              ConvertError,
+              "invalid string format for NaiveDateTime: #{reason}"
+            )
+        end
+
+      is_map(data) and data.__struct__ == NaiveDateTime ->
+        data
+
+      true ->
+        raise(
+          ConvertError,
+          "expected ISO8601 string or NaiveDateTime struct, found: #{inspect(data)}"
+        )
+    end
+  end
 
   defp to_datetime!(data) do
     cond do

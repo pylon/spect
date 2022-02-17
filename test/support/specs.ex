@@ -41,6 +41,8 @@ defmodule Spect.Support.Specs do
           optional(:key3) => integer()
         }
 
+  @type date_test :: Date.t()
+  @type naivedatetime_test :: NaiveDateTime.t()
   @type datetime_test :: DateTime.t()
 
   @type module_test :: module()
